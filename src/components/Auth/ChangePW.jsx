@@ -15,33 +15,35 @@ import {
 } from '@mui/material';
 import { useState } from 'react';
 import { useSocket } from '../../contexts/SocketContext';
+import { useSession } from '../../contexts/SessionContext';
 
-export default function Forgot({ setPage, setCodeAuth }) {
+export default function ChangePW({ setPage, codeAuth, setCodeAuth }) {
   const theme = useTheme();
+  const { setUser } = useSession();
   const { socket } = useSocket();
-  const [email, setEmail] = useState();
+  const [pass, setPass] = useState();
+  const [confirmPass, setConfirmPass] = useState();
   const [loading, setLoading] = useState(false);
-  const [errorMail, setErrorMail] = useState();
+  const [errors, setErrors] = useState();
   const [error, setError] = useState();
 
-  const handleReset = async () => {
-    if (!email) return setErrorMail('E-mail é obrigatório');
-    if (!(/^[^\s@]+@[^\s@]+\.[^\s@]+$/).test(email)) return setErrorMail('Digite um e-mail válido');
-    setErrorMail();
+  const handleSubmit = async () => {
+    if (!pass || !confirmPass) return setErrors({ pass: 'Campo obrigatório.' });
+    if (pass !== confirmPass) return setErrors({ pass: 'Senha e confirmação não confere.' });
+    if (pass?.length < 8) return setErrors({ pass: 'Senha precisa ter no mínimo 8 caracteres' });
 
     setLoading(true);
-    await socket.emit('auth:forgot', email, (response) => {
-      if (response.status === 'success') {
-        setCodeAuth({
-          email: email,
-          code: response?.data?.code
-        });
-        setPage('code');
+
+    await socket.emit('auth:changepw', { token: codeAuth?.token, pass, confirmPass, email: codeAuth?.email }, (response) => {
+      if (response?.status === 'success') {
+        setUser(response?.data);
+        setCodeAuth();
+        setPage('');
       } else {
-        setError(response?.error ?? 'Falha ao enviar código, tente novamente ou contate o suporte.')
+        setError(response?.error ?? 'Falha ao atualizar.');
       }
-      setLoading(false);
     });
+    setLoading(false);
   };
 
   const handleCloseAlert = () => setError();
@@ -83,23 +85,37 @@ export default function Forgot({ setPage, setCodeAuth }) {
       >
         <Stack spacing={3}>
           <Typography variant="h4" component="h1" gutterBottom>
-            Esquece sua senha ?
+            Alteração de senha
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Não se preocupe, vamos enviar um código de confirmação para seu e-mail para alterar sua senha.
+            Digite abaixo sua nova senha, tome cuidado para não errar.
           </Typography>
 
           <TextField
             fullWidth
-            id="email"
-            label="E-mail"
-            placeholder="seu@email.com"
-            type="email"
+            id="senha"
+            label="Nova senha"
+            placeholder=""
+            type="text"
             variant="outlined"
-            helperText={errorMail ?? "Qual é seu e-mail cadastrado ?"}
-            value={email}
-            onChange={(e) => setEmail(e?.target?.value)}
-            error={!!errorMail}
+            helperText={errors?.pass ?? "Digite sua nova senha"}
+            value={pass}
+            onChange={(e) => setPass(e?.target?.value)}
+            error={!!errors?.pass}
+            disabled={loading}
+          />
+
+          <TextField
+            fullWidth
+            id="confirmpass"
+            label="Confirmação de senha"
+            placeholder=""
+            type="password"
+            variant="outlined"
+            helperText={errors?.confirmPass ?? "Confirme a nova senha"}
+            value={confirmPass}
+            onChange={(e) => setConfirmPass(e?.target?.value)}
+            error={!!errors?.confirmPass}
             disabled={loading}
           />
 
@@ -113,8 +129,8 @@ export default function Forgot({ setPage, setCodeAuth }) {
                 bgcolor: 'primary.dark'
               }
             }}
-            onClick={() => handleReset()}
             disabled={loading}
+            onClick={() => handleSubmit()}
           >
             {loading ? (
               <Typography
@@ -122,13 +138,13 @@ export default function Forgot({ setPage, setCodeAuth }) {
                 variant="h7"
                 fontSize={14}
               >
-                <CircularProgress />&nbsp;&nbsp;Enviando código...
+                <CircularProgress />&nbsp;&nbsp;Validando alteração...
               </Typography>
-            ) : 'Solicitar alteração'}
+            ) : 'Alterar senha'}
           </Button>
 
           <Typography textAlign="center">
-            Lembrou da senha ?
+            Desistiu ?
           </Typography>
 
           <Button
@@ -138,9 +154,10 @@ export default function Forgot({ setPage, setCodeAuth }) {
             sx={{
               py: 1,
             }}
-            onClick={() => setPage('login')}
+            onClick={() => setPage('')}
+            disabled={loading}
           >
-            Acesse sua conta
+            Continue sem login
           </Button>
         </Stack>
       </Paper>

@@ -12,6 +12,7 @@ import Forgot from './components/Auth/Forgot';
 import Code from './components/Auth/Code';
 import ProfilePage from './components/User/Profile';
 import { LoginModal } from './components/Auth/loginModal';
+import ChangePW from './components/Auth/ChangePW';
 
 const Home = () => {
   const { user } = useSession();
@@ -55,8 +56,11 @@ const Home = () => {
       <Collapse in={page === 'profile'}>
         <ProfilePage setPage={setPage} />
       </Collapse>
+      <Collapse in={page === 'changepw'}>
+        <ChangePW setPage={setPage} codeAuth={codeAuth} setCodeAuth={setCodeAuth} />
+      </Collapse>
 
-      <LoginModal open={openLoginModal} close={closeLoginModal} setPage={setPage} />
+      <LoginModal open={openLoginModal} close={closeLoginModal} setPage={setPage} setCodeAuth={setCodeAuth} />
     </div>
   );
 };

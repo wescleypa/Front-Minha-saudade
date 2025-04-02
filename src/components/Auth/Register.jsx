@@ -148,14 +148,14 @@ export default function Register({ setPage, setCodeAuth }) {
         'register', { name: formData?.name, email: formData?.email, password: formData?.password },
         (response) => {
           console.log(' response ', response);
-          if (response.status === 'success') {
+          if (response?.status === 'success') {
             setCodeAuth({
               email: formData?.email,
               code: response?.data?.code
             });
             setPage('code');
           } else {
-            setErrorForm(response?.error ?? 'Erro ao registrar, tente novamente ou contate o suporte.');
+            setErrorForm(response?.error && typeof response?.error  === 'string' ? response?.error : 'Erro ao registrar, tente novamente ou contate o suporte.');
             console.error('Falha ao enviar mensagem:', response);
           }
           setLoading(false);
