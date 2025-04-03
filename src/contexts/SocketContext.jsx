@@ -13,7 +13,11 @@ export const SocketProvider = ({ children }) => {
     // Conexão com o servidor Socket.IO
     const socketInstance = io(process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || 'http://localhost:3000', {
       transports: ['websocket'],
-      autoConnect: false
+      autoConnect: true,
+      auth: {
+        token: localStorage.getItem("token"),
+        teste: "teste",
+      },
     });
 
     setSocket(socketInstance);

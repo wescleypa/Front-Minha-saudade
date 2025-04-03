@@ -33,7 +33,7 @@ const ProfileCard = ({ camila, update }) => {
   const [chat, setChat] = React.useState({
     name: 'Nome não definido',
     role: 'Analista de transportes',
-    avatar: '',
+    avatar: `${process.env.REACT_APP_API_URL}/chat/pic?token=${user?.token}&user=${camila}`,
     bio: 'Especializada em conversas profundas e memórias afetivas.',
     extrals: []
   });
@@ -41,8 +41,9 @@ const ProfileCard = ({ camila, update }) => {
   React.useEffect(() => {
     if (user?.chats) {
       const chatEncontrado = user.chats.find(chat => chat.id === camila);
-
+      
       if (chatEncontrado) {
+        setChat(prev => ({ ...prev, avatar: `${process.env.REACT_APP_API_URL}/chat/pic?token=${user?.token}&user=${camila}` }));
         setChat(prev => {
           const updatedChat = {};
 
@@ -139,7 +140,7 @@ const ProfileCard = ({ camila, update }) => {
     inputFile.click();
     document.body.removeChild(inputFile);
   };
-  
+
   return (
     <Card sx={{
       maxWidth: 345,
@@ -147,7 +148,12 @@ const ProfileCard = ({ camila, update }) => {
       boxShadow: '0px 4px 20px rgba(0,0,0,0.1)',
     }}>
       {/* Avatar */}
-      <Box>
+      <Box sx={{
+        position: 'relative',
+        border: '4px solid white',
+        borderRadius: '50%',
+        backgroundColor: 'white'
+      }}>
         <Avatar
           src={chat?.avatar}
           sx={{
@@ -160,14 +166,14 @@ const ProfileCard = ({ camila, update }) => {
             boxShadow: 1
           }}
         >
-          {!chat?.avatar && chat?.name.charAt(0)}
+          {chat?.name ? chat?.name.charAt(0) : 'C'}
         </Avatar>
 
         <IconButton
           sx={{
             position: 'absolute',
-            bottom: 0,
-            right: 0,
+            bottom: -40,
+            right: 100,
             zIndex: 2,
             backgroundColor: 'rgba(0, 0, 0, 0.5)',
             color: 'white',

@@ -249,7 +249,7 @@ export default function DrawerChat({ setPage }) {
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const [desktopOpen, setDesktopOpen] = React.useState(true);
   const [selectedChat, setSelectedChat] = React.useState();
-  const [inputValue, setInputValue] = React.useState();
+  const [resetInputMessage, setResetInputMessage] = React.useState(false);
   const [loading, setLoading] = React.useState({});
   const [openConfigChat, setOpenConfigChat] = React.useState(false);
   const [openSuccess, setOpenSuccess] = React.useState(false);
@@ -263,24 +263,160 @@ export default function DrawerChat({ setPage }) {
     }
   };
 
-  const handleSendMessage = () => {
-    if (inputValue.trim() === '') return;
+  const calculateTypingTimeout = (textLength) => {
+    // Constantes realistas:
+    const CHARS_PER_SECOND = 6.0;  // ~360 chars/min (ritmo natural)
+    const MIN_TIMEOUT = 1500;      // 1.5s mínimo (para "Oi", "Ok")
+    const BASE_TIMEOUT = 8000;     // Tempo base para textos médios
+    const LONG_TEXT_THRESHOLD = 500; // A partir de 500 chars, aplica escalonamento
 
-    // 1. Gera um ID temporário único para a mensagem
+    if (textLength <= LONG_TEXT_THRESHOLD) {
+      // Cálculo normal para textos curtos/médios
+      const baseTimeMs = (textLength / CHARS_PER_SECOND) * 1000;
+      return Math.round(Math.max(baseTimeMs, MIN_TIMEOUT));
+    } else {
+      // Escalonamento para textos MUITO longos (ex.: seu Lorem Ipsum)
+      const excessChars = textLength - LONG_TEXT_THRESHOLD;
+      const extraTime = (excessChars / (CHARS_PER_SECOND * 2)) * 1000; // Diminui a velocidade
+      return Math.round(BASE_TIMEOUT + extraTime);
+    }
+  };
+
+  const sendMessage = async (value, isNewChat, targetChatId, tempMessageId) => {
+    if (value.trim() === '') return;
+
+    await socket.emit(
+      'message:send',
+      {
+        input: value,
+        chat: user?.chats?.find(c => c?.id === selectedChat) || [],
+        user,
+        chatID: targetChatId,
+      },
+      (response) => {
+        // Ativa o loading IMEDIATAMENTE ao receber a resposta
+        setLoading(prev => ({ ...prev, [`chat${targetChatId}`]: true }));
+
+        const handleResponseProcessing = () => {
+          if (response.status === 'success') {
+            const lengthMessage = response?.reply?.length || 0;
+            const processingTime = calculateTypingTimeout(lengthMessage)/2;
+
+            // 1. Primeiro processa as atualizações do chat
+            if (response?.tempChatID || response?.tempChatID === 0) {
+              setUser(prev => ({
+                ...prev,
+                chats: prev.chats.map(chat =>
+                  chat.id === response.tempChatID
+                    ? {
+                      ...chat,
+                      id: response.permanentChatID,
+                      isTemp: undefined,
+                      name: response?.chatName ?? chat?.name
+                    }
+                    : chat
+                )
+              }));
+              setLoading(prev => ({ ...prev, [`chat${targetChatId}`]: false }));
+              setLoading(prev => ({ ...prev, [`chat${response?.permanentChatID}`]: true }));
+              setSelectedChat(response.permanentChatID);
+            }
+
+            // 2. Atualizações adicionais do chat
+            if (response?.chatName && !response?.tempChatID && response?.tempChatID !== 0) {
+              setUser(prev => ({
+                ...prev,
+                chats: prev.chats.map(chat =>
+                  chat.id === (response?.permanentChatID || targetChatId)
+                    ? {
+                      ...chat,
+                      name: response?.chatName ?? chat?.name
+                    }
+                    : chat
+                )
+              }));
+            }
+
+            // 3. Atualiza as mensagens com delay calculado
+            setTimeout(() => {
+              setUser(prev => ({
+                ...prev,
+                chats: prev.chats.map(chat =>
+                  chat.id === (response.permanentChatID || targetChatId)
+                    ? {
+                      ...chat,
+                      messages: chat.messages
+                        .map(msg =>
+                          msg.tempId === tempMessageId
+                            ? { ...msg, tempId: undefined, removeContext: false }
+                            : msg
+                        )
+                        .concat(
+                          response.reply
+                            ? {
+                              sender: 'assistant',
+                              text: response.reply,
+                              timestamp: new Date().toISOString()
+                            }
+                            : []
+                        )
+                    }
+                    : chat
+                )
+              }));
+
+              // DESATIVA O LOADING somente após exibir a mensagem
+              setLoading(prev => ({ ...prev, [`chat${response?.permanentChatID}`]: false }));
+            }, processingTime);
+          } else {
+            // Tratamento de erro (mantém igual)
+            if (response?.error?.toString()?.includes('expirada')) {
+              setOpenError(response?.error);
+            } else {
+              setUser(prev => ({
+                ...prev,
+                chats: isNewChat
+                  ? prev.chats?.filter(chat => chat.id !== targetChatId)
+                  : prev.chats.map(chat =>
+                    chat.id === targetChatId
+                      ? {
+                        ...chat,
+                        messages: chat.messages.filter(msg => msg.tempId !== tempMessageId)
+                      }
+                      : chat
+                  )
+              }));
+            }
+            setLoading(prev => ({ ...prev, [`chat${response?.permanentChatID}`]: false }));
+          }
+        };
+
+        // Processa a resposta imediatamente (mas o loading continua até o timeout)
+        handleResponseProcessing();
+      }
+    );
+
+  };
+
+
+  const messagesBuffer = React.useRef({});
+  const typingTimeouts = React.useRef({});
+
+  const handleSendMessage = React.useCallback(async (value) => {
+    const isNewChat = selectedChat === null || selectedChat === undefined;
+    const targetChatId = (selectedChat === null || selectedChat === undefined)
+      ? user?.chats?.length || 0 : selectedChat;
+
+    // 1. Atualiza a UI imediatamente com mensagem temporária
     const tempMessageId = Date.now();
     const newMessage = {
       sender: 'user',
-      text: inputValue,
+      text: value,
       removeContext: true,
       tempId: tempMessageId,
       timestamp: new Date().toISOString()
     };
 
-    // 2. Determina se é um NOVO chat ou existente
-    const isNewChat = selectedChat === null || selectedChat === undefined;
-    const targetChatId = isNewChat ? user?.chats?.length || 0 : selectedChat;
-
-    // 3. Atualização OTIMISTA (UI instantânea)
     setUser(prev => {
       const newChat = {
         id: targetChatId,
@@ -301,127 +437,51 @@ export default function DrawerChat({ setPage }) {
         };
     });
 
-    // 4. Prepara o context corretamente (array vazio se for novo chat)
-    const context = isNewChat
-      ? [] // ⭐ Novo chat → array vazio
-      : user?.chats?.find(chat => chat?.id === targetChatId)?.messages
-        ?.filter(m => !m?.removeContext) || []; // Chat existente (ou array vazio se falhar)
-
-    setLoading(prev => ({ ...prev, [`chat${targetChatId}`]: true }));
-
-    const chatSend = isNewChat
-      ? {}
-      : (() => {
-        const foundChat = user?.chats?.find(c => c?.id === selectedChat);
-        if (!foundChat) return {};
-
-        // Remove a propriedade 'messages' do objeto chat
-        const { messages, ...chatWithoutMessages } = foundChat;
-        return chatWithoutMessages;
-      })();
-
-    // 5. Envia via socket
-    socket.emit(
-      'send',
-      {
-        input: inputValue,
-        context, // Garantido como array (vazio ou com mensagens)
-        token: user?.token,
-        chatID: targetChatId,
-        isNewChat, // ⭐ Envia explicitamente se é novo chat (opcional)
-        chat: chatSend
-      },
-      (response) => {
-        setLoading(prev => ({ ...prev, [`chat${targetChatId}`]: false }));
-
-        if (response.status === 'success') {
-          if (response?.tempChatID || response?.tempChatID === 0) {
-            setUser(prev => ({
-              ...prev,
-              chats: prev.chats.map(chat =>
-                chat.id === response.tempChatID
-                  ? {
-                    ...chat,
-                    id: response.permanentChatID, // 🔄 ID real
-                    isTemp: undefined, // Remove marcação
-                    name: response?.chatName ?? chat?.name
-                  }
-                  : chat
-              )
-            }));
-
-            // Atualiza o chat selecionado com o ID real
-            setSelectedChat(response.permanentChatID);
-          }
-
-          if (response?.chatName && !response?.tempChatID && response?.tempChatID !== 0) {
-            setUser(prev => ({
-              ...prev,
-              chats: prev.chats.map(chat =>
-                chat.id === (response?.permanentChatID || targetChatId)
-                  ? {
-                    ...chat,
-                    name: response?.chatName ?? chat?.name
-                  }
-                  : chat
-              )
-            }));
-          }
-
-          setUser(prev => ({
-            ...prev,
-            chats: prev.chats.map(chat =>
-              chat.id === (response.permanentChatID || targetChatId)
-                ? {
-                  ...chat,
-                  messages: chat.messages
-                    .map(msg =>
-                      msg.tempId === tempMessageId
-                        ? { ...msg, tempId: undefined, removeContext: false } // Remove temporário
-                        : msg
-                    )
-                    // Adiciona resposta do bot (se existir)
-                    .concat(
-                      response.reply
-                        ? {
-                          sender: 'assistant',
-                          text: response.reply,
-                          timestamp: new Date().toISOString()
-                        }
-                        : []
-                    )
-                }
-                : chat
-            )
-          }));
-        } else {
-          // Rollback em caso de erro
-          setUser(prev => ({
-            ...prev,
-            chats: isNewChat
-              ? prev.chats?.filter(chat => chat.id !== targetChatId) // Remove chat novo
-              : prev.chats.map(chat =>
-                chat.id === targetChatId
-                  ? {
-                    ...chat,
-                    messages: chat.messages.filter(msg => msg.tempId !== tempMessageId)
-                  }
-                  : chat
-              )
-          }));
-        }
-      }
-    );
-
-    // 6. Atualiza chat selecionado se for novo
     if (isNewChat) {
       setSelectedChat(targetChatId);
     }
 
-    setInputValue('');
-  };
+    setResetInputMessage(true);
+
+    // 2. Sistema de buffer para agrupamento
+    if (!messagesBuffer.current[targetChatId]) {
+      messagesBuffer.current[targetChatId] = [];
+    }
+
+    if (typingTimeouts.current[targetChatId]) {
+      clearTimeout(typingTimeouts.current[targetChatId]);
+    }
+
+    messagesBuffer.current[targetChatId].push(value);
+
+    typingTimeouts.current[targetChatId] = setTimeout(async () => {
+      const fullMessage = messagesBuffer.current[targetChatId].join(' ');
+      messagesBuffer.current[targetChatId] = [];
+
+      try {
+        await sendMessage(fullMessage, isNewChat, targetChatId, tempMessageId);
+      } catch (error) {
+        console.error("Failed to send message:", error);
+        // Reverter a mensagem temporária em caso de erro
+        setUser(prev => ({
+          ...prev,
+          chats: prev.chats.map(chat =>
+            chat.id === targetChatId
+              ? {
+                ...chat,
+                messages: chat.messages.filter(msg => msg.tempId !== tempMessageId)
+              }
+              : chat
+          )
+        }));
+      }
+
+      delete typingTimeouts.current[targetChatId];
+    }, 3000);
+  }, [selectedChat, user?.chats?.length]);
 
   const renderMenuItems = (item) => {
+
     return (
       <ListItem
         key={item?.name}
@@ -442,8 +502,12 @@ export default function DrawerChat({ setPage }) {
               mr: desktopOpen ? 1 : 'auto'
             }}
           >
-            <Avatar sx={{ width: 30, height: 30 }} src={item?.avatar}>
-              {!item?.avatar && item?.name.charAt(0)}
+            <Avatar
+              sx={{ width: 30, height: 30 }}
+              src={`${process.env.REACT_APP_API_URL}/chat/pic?token=${user?.token}&user=${item?.id}`}
+              alt={item?.name}
+            >
+              {item?.name.charAt(0)}
             </Avatar>
           </ListItemIcon>
           <ListItemText sx={{ display: desktopOpen || mobileOpen ? 'block' : 'none' }} primary={item?.name} />
@@ -478,12 +542,15 @@ export default function DrawerChat({ setPage }) {
         )
       }));
 
-      await socket.emit('updateChatConfig',
-        { token: user?.token, chatID, column, value },
+      var chatUpdate = user?.chats?.find(c => c?.id === chatID);
+      chatUpdate[column] = value;
+      await socket.emit('chat:update',
+        { chatID, column, value, user, chat: chatUpdate },
         (response) => {
           if (response?.status === 'success') {
             setOpenSuccess('Atualização configurada');
           } else {
+            console.log('erro antes ', user)
             setUser(prev => ({
               ...prev,
               chats: prev.chats.map(chat =>
@@ -714,7 +781,12 @@ export default function DrawerChat({ setPage }) {
                     }}>
                     {user?.chats?.find(chat => chat.id === selectedChat)?.messages?.map((message, index) => (
                       <div key={index}>
-                        <ChatMessage key={index} message={message} chat={user?.chats?.find(chat => chat.id === selectedChat) || []} />
+                        <ChatMessage
+                          key={index}
+                          message={message}
+                          chat={user?.chats?.find(chat => chat.id === selectedChat) || []}
+                          avatar={`${process.env.REACT_APP_API_URL}/chat/pic?token=${user?.token}&user=${selectedChat}`}
+                        />
                       </div>
                     ))}
 
@@ -825,10 +897,10 @@ export default function DrawerChat({ setPage }) {
             }}
           >
             <ChatInput
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
+              resetInput={resetInputMessage}
+              resetedInput={(e) => setResetInputMessage(!e)}
               onSend={handleSendMessage}
-              disabled={!!loading[`chat${selectedChat}`]}
+              //disabled={!!loading[`chat${selectedChat}`]}
             />
           </Container>
         </Box>

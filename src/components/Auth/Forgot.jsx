@@ -31,14 +31,14 @@ export default function Forgot({ setPage, setCodeAuth }) {
 
     setLoading(true);
     await socket.emit('auth:forgot', email, (response) => {
-      if (response.status === 'success') {
+      if (response?.status === 'success') {
         setCodeAuth({
           email: email,
           code: response?.data?.code
         });
         setPage('code');
       } else {
-        setError(response?.error ?? 'Falha ao enviar código, tente novamente ou contate o suporte.')
+        setError(response?.error && typeof response?.error === 'string' ? response?.error : 'Falha ao enviar código, tente novamente ou contate o suporte.')
       }
       setLoading(false);
     });

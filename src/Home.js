@@ -15,7 +15,7 @@ import { LoginModal } from './components/Auth/loginModal';
 import ChangePW from './components/Auth/ChangePW';
 
 const Home = () => {
-  const { user } = useSession();
+  const { user, loadingUser } = useSession();
   const [page, setPage] = useState('');
   const [openLoginModal, setOpenLoginModal] = useState(false);
   const [codeAuth, setCodeAuth] = useState();
@@ -23,13 +23,15 @@ const Home = () => {
   const closeLoginModal = () => setOpenLoginModal(false);
 
   useEffect(() => {
-    if (user?.id && !!openLoginModal) {
-      setOpenLoginModal(false);
+    if (!loadingUser) {
+      if (user?.id && !!openLoginModal) {
+        setOpenLoginModal(false);
+      }
+      if (!user?.id && !openLoginModal) {
+        setOpenLoginModal(true);
+      }
     }
-    if (!user?.id & !openLoginModal) {
-      setOpenLoginModal(true);
-    }
-  }, [user]);
+  }, [loadingUser, user]);
 
   return (
     <div className="App" style={{ backgroundColor: 'RGB(237, 237, 237)' }}>

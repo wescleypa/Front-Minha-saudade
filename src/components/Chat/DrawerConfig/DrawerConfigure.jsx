@@ -315,8 +315,8 @@ export default function DrawerConfigure({ open, setOpen, camila, update }) {
                       <InputLabel shrink={true}>Estado de nascimento</InputLabel>
                       <FormControl fullWidth sx={{ mb: 3 }}>
                         <Autocomplete
-                          value={chat?.nascimento}
-                          onChange={(e) => update(camila, 'nascimento', e?.target?.innerText)}
+                          value={estadosBrasil.find((estado) => estado.sigla === chat?.nascimento) || null}
+                          onChange={(_, newValue) => update(camila, 'nascimento', newValue?.sigla || '')}
                           options={estadosBrasil}
                           getOptionLabel={(option) => `${option.nome} (${option.sigla})`}
                           renderInput={(params) => (

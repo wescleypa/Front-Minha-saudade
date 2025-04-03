@@ -3,21 +3,33 @@
 import { Box, TextField, IconButton } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
+import { useEffect, useState } from 'react';
 
-export const ChatInput = ({ value, onChange, onSend, disabled }) => {
+export const ChatInput = ({ resetInput, resetedInput, onSend, disabled }) => {
+  const [value, setValue] = useState();
+
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      onSend();
+      onSend(value);
     }
   };
+
+  useEffect(() => {
+    if (resetInput) {
+      resetedInput(true);
+      setValue('');
+    }
+  }, [resetInput]);
+
+  const handleChange = (e) => setValue(e?.target?.value);
 
   return (
     <Box
       component="form"
       onSubmit={(e) => {
         e.preventDefault();
-        onSend();
+        onSend(value);
       }}
       sx={{
         width: '100%',
@@ -40,7 +52,7 @@ export const ChatInput = ({ value, onChange, onSend, disabled }) => {
         fullWidth
         value={value}
         disabled={disabled}
-        onChange={onChange}
+        onChange={handleChange}
         onKeyDown={handleKeyDown}
         variant="outlined"
         placeholder="Digite sua mensagem..."

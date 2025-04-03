@@ -17,6 +17,7 @@ import { useSession } from '../../contexts/SessionContext';
 
 export default function Code({ setPage, codeAuth, setCodeAuth }) {
   const { socket } = useSocket();
+  const { setUser } = useSession();
   const theme = useTheme();
   const [otp, setOtp] = useState(['', '', '', '']);
   const [codeOK, setCodeOK] = useState(false);
@@ -58,8 +59,14 @@ export default function Code({ setPage, codeAuth, setCodeAuth }) {
     await socket.emit('auth:verifyCode', codeAuth,
       (response) => {
         if (response.status === 'success') {
-          setCodeAuth(Object.assign({}, response?.token, { email: codeAuth?.email }));
-          setPage('changepw');
+          setCodeAuth(Object.assign({}, response?.data, { email: codeAuth?.email }));
+
+          if (response?.data?.action === 1) setPage('changepw');
+          else {
+            setCodeAuth();
+            setUser(response?.data?.user);
+            setPage('');
+          }
         } else {
           setError(response?.error ?? 'Erro ao logar, tente novamente ou contate o suporte.');
           console.error('Falha ao enviar mensagem:', response);

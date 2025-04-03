@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Box, TextField, InputAdornment, IconButton, Typography } from "@mui/material";
 import { Edit, Close, Check, Label } from "@mui/icons-material";
 
@@ -19,6 +19,10 @@ export default function EditableField({ value, onSave, children, multiline = fal
     setTempValue(value);
     setIsEditing(false);
   };
+
+  useEffect(() => {
+    setTempValue(value);
+  }, [value]);
 
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', ...sx }}>

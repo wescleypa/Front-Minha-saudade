@@ -3,6 +3,7 @@
 import { Box, Avatar, Typography, styled, keyframes } from '@mui/material';
 import React, { useEffect } from 'react';
 import { useSession } from '../../contexts/SessionContext';
+import axios from 'axios';
 
 const ThoughtBubble = styled(Box, {
   shouldForwardProp: (prop) => prop !== 'isCurrentUser'
@@ -60,25 +61,8 @@ const TypingDots = () => {
   );
 };
 
-export const ChatMessage = ({ message, chat, enableDots = null }) => {
+export const ChatMessage = ({ message, chat, enableDots = null, avatar }) => {
   const { user } = useSession();
-  const [chatAvatar, setChatAvatar] = React.useState(
-    chat?.avatar ?? window.location.origin + '/images/camila.webp'
-  );
-
-  useEffect(() => {
-    if (user) {
-      const chatUpdated = user?.chats?.find(c => c?.id === chat?.id);
-   
-      if (chatUpdated?.avatar !== chat?.avatar) {
-        setChatAvatar(chatUpdated?.avatar);
-      }
-
-      if (!chatUpdated?.avatar || chatUpdated?.avatar === '') {
-        setChatAvatar(window.location.origin + '/images/camila.webp');
-      }
-    }
-  }, [user, chat?.id]);
 
   function formatMessageDate(dateString) {
 
@@ -134,8 +118,20 @@ export const ChatMessage = ({ message, chat, enableDots = null }) => {
       {message.sender === 'assistant' && (
         <Avatar
           sx={{ bgcolor: 'primary.dark', mr: 1 }}
-          src={chatAvatar}
-        />
+          src={avatar}
+          alt={chat?.name}
+        >
+          <img
+            src={window.location.origin + '/images/camila.webp'}
+            alt={chat?.name}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: 'center'
+            }}
+          />
+        </Avatar>
       )}
 
       <ThoughtBubble isCurrentUser={message?.sender === 'user'}>
