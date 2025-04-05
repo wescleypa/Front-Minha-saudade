@@ -254,6 +254,12 @@ export default function DrawerChat({ setPage }) {
   const [openConfigChat, setOpenConfigChat] = React.useState(false);
   const [openSuccess, setOpenSuccess] = React.useState(false);
   const [openError, setOpenError] = React.useState(false);
+  const [unviewedChats, setUnviewedChats] = React.useState({});
+  const selectedChatRef = React.useRef(selectedChat);
+
+  React.useEffect(() => {
+    selectedChatRef.current = selectedChat;
+  }, [selectedChat]);
 
   const handleDrawerToggle = () => {
     if (isMobile) {
@@ -262,6 +268,56 @@ export default function DrawerChat({ setPage }) {
       setDesktopOpen(!desktopOpen);
     }
   };
+
+  React.useEffect(() => {
+    if (user?.chats) {
+      const unviewed = {};
+      user.chats.forEach(chat => {
+        if (!chat.viewed && chat.id !== selectedChatRef.current) {
+          unviewed[chat.id] = true;
+        }
+      });
+      setUnviewedChats(unviewed);
+    }
+  }, [user?.chats, selectedChat]);
+
+  // Função para marcar chat como visualizado
+  const markChatAsViewed = async (chatId) => {
+    // Não marca como visto se já for o chat atual ou se for inválido
+    if (!chatId || chatId === selectedChatRef.current) return;
+
+    setUser(prev => ({
+      ...prev,
+      chats: prev.chats.map(chat =>
+        chat.id === chatId
+          ? { ...chat, viewed: true }
+          : chat
+      )
+    }));
+
+    await socket.emit('chat:viewed', { chatId }, (response) => {
+      if (response?.status === 'success') {
+
+        setUser(prev => ({
+          ...prev,
+          chats: prev.chats.map(chat =>
+            chat.id === chatId
+              ? { ...chat, viewed: true }
+              : chat
+          )
+        }));
+      } else {
+        console.error('Falha ao marcar chat como visto:', response?.error);
+      }
+    });
+  };
+
+  React.useEffect(() => {
+    // Verifica se o chat realmente mudou e não é nulo/undefined
+    if (selectedChat && selectedChat !== selectedChatRef.current) {
+      markChatAsViewed(selectedChat);
+    }
+  }, [selectedChat]);
 
   const calculateTypingTimeout = (textLength) => {
     // Constantes realistas:
@@ -288,10 +344,8 @@ export default function DrawerChat({ setPage }) {
     await socket.emit(
       'message:send',
       {
-        input: value,
-        chat: user?.chats?.find(c => c?.id === selectedChat) || [],
-        user,
         chatID: targetChatId,
+        input: value
       },
       (response) => {
         // Ativa o loading IMEDIATAMENTE ao receber a resposta
@@ -300,7 +354,7 @@ export default function DrawerChat({ setPage }) {
         const handleResponseProcessing = () => {
           if (response.status === 'success') {
             const lengthMessage = response?.reply?.length || 0;
-            const processingTime = calculateTypingTimeout(lengthMessage)/2;
+            const processingTime = calculateTypingTimeout(lengthMessage) / 2;
 
             // 1. Primeiro processa as atualizações do chat
             if (response?.tempChatID || response?.tempChatID === 0) {
@@ -359,7 +413,8 @@ export default function DrawerChat({ setPage }) {
                               timestamp: new Date().toISOString()
                             }
                             : []
-                        )
+                        ),
+                      viewed: chat.id === selectedChatRef.current
                     }
                     : chat
                 )
@@ -369,7 +424,7 @@ export default function DrawerChat({ setPage }) {
               setLoading(prev => ({ ...prev, [`chat${response?.permanentChatID}`]: false }));
             }, processingTime);
           } else {
-            // Tratamento de erro (mantém igual)
+            // Tratamento de erro
             if (response?.error?.toString()?.includes('expirada')) {
               setOpenError(response?.error);
             } else {
@@ -381,7 +436,11 @@ export default function DrawerChat({ setPage }) {
                     chat.id === targetChatId
                       ? {
                         ...chat,
-                        messages: chat.messages.filter(msg => msg.tempId !== tempMessageId)
+                        messages: chat.messages.map(msg =>
+                          msg.tempId === tempMessageId
+                            ? { ...msg, error: true, errorMessage: response?.error || "Erro ao enviar" }
+                            : msg
+                        )
                       }
                       : chat
                   )
@@ -480,19 +539,45 @@ export default function DrawerChat({ setPage }) {
     }, 3000);
   }, [selectedChat, user?.chats?.length]);
 
+  const handleRetryMessage = (message) => {
+    // Primeiro remove a mensagem com erro
+    setUser(prev => ({
+      ...prev,
+      chats: prev.chats.map(chat =>
+        chat.id === selectedChat
+          ? {
+            ...chat,
+            messages: chat.messages.filter(msg =>
+              !(msg.id === message.id || msg.tempId === message.tempId)
+            )
+          }
+          : chat
+      )
+    }));
+
+    // Depois envia novamente
+    handleSendMessage(message.text);
+  };
+
   const renderMenuItems = (item) => {
+    const hasUnread = !item.viewed && item.id !== selectedChatRef.current;
 
     return (
       <ListItem
         key={item?.name}
-        disablePadding sx={{ display: 'block' }}
-        onClick={() => setSelectedChat(item?.id)}
+        disablePadding
+        sx={{ display: 'block' }}
+        onClick={() => {
+          setSelectedChat(item?.id);
+          markChatAsViewed(item.id);
+        }}
       >
         <ListItemButton
           sx={{
             minHeight: 48,
             px: 2.5,
-            justifyContent: desktopOpen ? 'initial' : 'center'
+            justifyContent: desktopOpen ? 'initial' : 'center',
+            position: 'relative'
           }}
         >
           <ListItemIcon
@@ -510,7 +595,28 @@ export default function DrawerChat({ setPage }) {
               {item?.name.charAt(0)}
             </Avatar>
           </ListItemIcon>
-          <ListItemText sx={{ display: desktopOpen || mobileOpen ? 'block' : 'none' }} primary={item?.name} />
+          <ListItemText
+            sx={{
+              display: desktopOpen || mobileOpen ? 'block' : 'none',
+              fontWeight: hasUnread ? 'bold' : 'normal'
+            }}
+            primary={item?.name}
+          />
+
+          {hasUnread && (
+            <Box
+              sx={{
+                position: 'absolute',
+                right: 8,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                backgroundColor: 'primary.main'
+              }}
+            />
+          )}
         </ListItemButton>
       </ListItem>
     );
@@ -550,7 +656,6 @@ export default function DrawerChat({ setPage }) {
           if (response?.status === 'success') {
             setOpenSuccess('Atualização configurada');
           } else {
-            console.log('erro antes ', user)
             setUser(prev => ({
               ...prev,
               chats: prev.chats.map(chat =>
@@ -786,6 +891,7 @@ export default function DrawerChat({ setPage }) {
                           message={message}
                           chat={user?.chats?.find(chat => chat.id === selectedChat) || []}
                           avatar={`${process.env.REACT_APP_API_URL}/chat/pic?token=${user?.token}&user=${selectedChat}`}
+                          onRetry={(text) => handleRetryMessage(text)}
                         />
                       </div>
                     ))}
@@ -796,7 +902,7 @@ export default function DrawerChat({ setPage }) {
                         sender: 'assistant',
                         text: 'Está digitando',
                         timestamp: new Date().toISOString()
-                      }} chat={user?.chats?.find(chat => chat.id === selectedChat) || []} enableDots={true} />
+                      }} chat={user?.chats?.find(chat => chat.id === selectedChat) || []} enableDots={true} onRetry={(text) => handleRetryMessage(text)} />
                     )}
 
                     {!loading[`chat${selectedChat}`] && (
@@ -900,7 +1006,7 @@ export default function DrawerChat({ setPage }) {
               resetInput={resetInputMessage}
               resetedInput={(e) => setResetInputMessage(!e)}
               onSend={handleSendMessage}
-              //disabled={!!loading[`chat${selectedChat}`]}
+            //disabled={!!loading[`chat${selectedChat}`]}
             />
           </Container>
         </Box>

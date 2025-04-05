@@ -1,23 +1,32 @@
 'use client';
 
-import { Box, Avatar, Typography, styled, keyframes } from '@mui/material';
+import { Box, Avatar, Typography, styled, keyframes, Tooltip, IconButton } from '@mui/material';
 import React, { useEffect } from 'react';
 import { useSession } from '../../contexts/SessionContext';
 import axios from 'axios';
+import ErrorIcon from '@mui/icons-material/Error';
+import ReplayIcon from '@mui/icons-material/Replay';
 
 const ThoughtBubble = styled(Box, {
-  shouldForwardProp: (prop) => prop !== 'isCurrentUser'
-})(({ theme, isCurrentUser }) => ({
+  shouldForwardProp: (prop) => prop !== 'isCurrentUser' && prop !== 'hasError'
+})(({ theme, isCurrentUser, hasError }) => ({
   position: 'relative',
   maxWidth: '70%',
   padding: theme.spacing(1.5),
   borderRadius: '18px',
-  backgroundColor: isCurrentUser
-    ? theme.palette.primary.main
-    : theme.palette.grey[300],
-  color: isCurrentUser ? '#fff' : theme.palette.text.primary,
+  backgroundColor: hasError
+    ? theme.palette.warning.main
+    : isCurrentUser
+      ? theme.palette.primary.main
+      : theme.palette.grey[300],
+  color: hasError
+    ? theme.palette.error.contrastText
+    : isCurrentUser
+      ? '#fff'
+      : theme.palette.text.primary,
   alignSelf: isCurrentUser ? 'flex-end' : 'flex-start',
   margin: '8px 0',
+  border: hasError ? `1px solid ${theme.palette.warning.main}` : 'none',
   '&::before': {
     content: '""',
     position: 'absolute',
@@ -27,9 +36,11 @@ const ThoughtBubble = styled(Box, {
     top: '12px',
     borderStyle: 'solid',
     borderWidth: '8px 12px 8px 0',
-    borderColor: `transparent ${isCurrentUser
-      ? theme.palette.primary.main
-      : theme.palette.grey[300]
+    borderColor: `transparent ${hasError
+      ? theme.palette.warning.main
+      : isCurrentUser
+        ? theme.palette.primary.main
+        : theme.palette.grey[300]
       } transparent transparent`,
     transform: isCurrentUser ? 'rotate(180deg)' : 'none'
   }
@@ -61,8 +72,7 @@ const TypingDots = () => {
   );
 };
 
-export const ChatMessage = ({ message, chat, enableDots = null, avatar }) => {
-  const { user } = useSession();
+export const ChatMessage = ({ message, chat, enableDots = null, avatar, onRetry }) => {
 
   function formatMessageDate(dateString) {
 
@@ -107,6 +117,12 @@ export const ChatMessage = ({ message, chat, enableDots = null, avatar }) => {
     }
   }
 
+  const handleRetry = () => {
+    if (onRetry && message?.text) {
+      onRetry(message);
+    }
+  };
+
   return (
     <Box
       sx={{
@@ -134,28 +150,55 @@ export const ChatMessage = ({ message, chat, enableDots = null, avatar }) => {
         </Avatar>
       )}
 
-      <ThoughtBubble isCurrentUser={message?.sender === 'user'}>
-        <Typography
-          variant="body1"
-          sx={{
-            display: 'flex',
-            alignItems: 'center'
-          }}
-        >
-          {message?.text}&nbsp;{!!enableDots && (<TypingDots />)}
-        </Typography>
-        {!enableDots && (
-          <Typography
-            variant="caption"
-            display="block"
-            textAlign="right"
-            sx={{ opacity: 0.7 }}
-          >
-            {formatMessageDate(message?.timestamp) || message?.timestamp}
-          </Typography>
-        )}
-      </ThoughtBubble>
+      <ThoughtBubble
+        isCurrentUser={message?.sender === 'user'}
+        hasError={message?.error}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          {message?.error && (
+            <Tooltip title={message.errorMessage || "Erro ao enviar mensagem"}>
+              <ErrorIcon sx={{ cursor: 'pointer', mr: 1 }} />
+            </Tooltip>
+          )}
 
+          <Typography variant="body1">
+            {message?.text}
+          </Typography>
+
+          {!!enableDots && <TypingDots />}
+        </Box>
+
+        <Box sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          mt: 0.5
+        }}>
+          {!enableDots && !message?.error && (
+            <Typography
+              variant="caption"
+              sx={{
+                opacity: 0.7,
+                color: message?.error ? 'error.main' : 'inherit'
+              }}
+            >
+              {formatMessageDate(message?.timestamp) || message?.timestamp}
+            </Typography>
+          )}
+
+          {message?.error && onRetry && (
+            <Tooltip title="Tentar novamente">
+              <IconButton
+                size="small"
+                onClick={handleRetry}
+                sx={{ p: 0, ml: 1 }}
+              >
+                <ReplayIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+        </Box>
+      </ThoughtBubble>
     </Box>
   );
 };

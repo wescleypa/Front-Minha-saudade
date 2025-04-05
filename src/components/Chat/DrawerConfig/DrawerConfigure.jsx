@@ -25,6 +25,7 @@ import EditableField from './EditableField';
 import ProfileCard from './ProfileCard';
 import NoteApp from './Lembranças';
 import { useSession } from '../../../contexts/SessionContext';
+import ChatTrain from './ChatTrain';
 
 // Estilo personalizado para o drawer
 const StyledDrawer = styled(Drawer)(({ theme }) => ({
@@ -394,7 +395,11 @@ export default function DrawerConfigure({ open, setOpen, camila, update }) {
                             inputLabel: {
                               shrink: true,
                             },
+                            htmlInput: {
+                              maxLength: 50
+                            }
                           }}
+                          
                         />
                       </FormControl>
                     </Grid>
@@ -409,7 +414,7 @@ export default function DrawerConfigure({ open, setOpen, camila, update }) {
             <NoteApp camila={camila} update={update} />
           </TabPanel>
           <TabPanel value={tabValue} index={2}>
-            Conteúdo da aba Histórico
+            <ChatTrain camila={camila} />
           </TabPanel>
         </Box>
       </SwipeableDrawer >

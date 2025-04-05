@@ -207,9 +207,15 @@ export default function Lembrancas({ camila, update }) {
             multiline
             minRows={minRows}
             maxRows={maxRows}
+            slotProps={{
+              htmlInput: {
+                maxLength: 1000
+              },
+            }}
             fullWidth
             variant="outlined"
             placeholder="Fale sobre o cheiro da casa, a textura daquele tecido favorito, o tom de voz que você nunca esqueceu..."
+            helperText="Máximo de 1000 caracteres"
             sx={{
               '& .MuiOutlinedInput-root': {
                 '& textarea': {

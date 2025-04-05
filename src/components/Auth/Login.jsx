@@ -189,12 +189,14 @@ export default function Login({ setPage, setCodeAuth }) {
 
       <Container maxWidth="lg" sx={{ py: isMdUp ? 0 : 4, height: { xs: 'auto', md: '100%' } }}>
         <Grid container spacing={isLgUp ? 8 : isMdUp ? 6 : 4} sx={{ height: '100%' }}>
+
           {/* Coluna do carrossel */}
           <Grid item size={{ xs: 12, md: 6 }} sx={{
             height: '100%',
             display: 'flex',
             flexDirection: 'column',
-            justifyContent: 'center'
+            justifyContent: 'center',
+            order: { xs: 2, md: 1 }
           }}>
             <Typography
               variant={isLgUp ? 'h2' : isMdUp ? 'h3' : 'h4'}
@@ -203,6 +205,7 @@ export default function Login({ setPage, setCodeAuth }) {
               zIndex={2}
               mb={4}
               textAlign="center"
+              display={{ xs: 'none', sm: 'block' }}
             >
               Olá novamente, fiquei com <GradientText>saudades</GradientText>...
             </Typography>
@@ -212,8 +215,7 @@ export default function Login({ setPage, setCodeAuth }) {
               width: '100%',
               maxWidth: 800,
               mx: 'auto',
-              px: 2,
-              display: { xs: 'none', sm: 'block' }
+              px: 2
             }}>
               <Typography
                 variant="h5"
@@ -318,8 +320,22 @@ export default function Login({ setPage, setCodeAuth }) {
           <Grid item size={{ xs: 12, md: 6 }} sx={{
             height: '100%',
             display: 'flex',
-            alignItems: 'center'
+            flexDirection: { xs: 'column', md: 'row' },
+            alignItems: 'center',
+            order: { xs: 1, md: 2 }
           }}>
+            <Typography
+              variant={isLgUp ? 'h2' : isMdUp ? 'h3' : 'h4'}
+              lineHeight={1.1}
+              fontWeight={700}
+              zIndex={2}
+              mb={4}
+              textAlign="center"
+              display={{ xs: 'block', sm: 'none' }}
+            >
+              Olá novamente, fiquei com <GradientText>saudades</GradientText>...
+            </Typography>
+
             <Paper
               elevation={0}
               sx={{

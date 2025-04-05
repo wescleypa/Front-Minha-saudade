@@ -95,7 +95,7 @@ export default function Register({ setPage, setCodeAuth }) {
   const theme = useTheme();
   const { socket } = useSocket();
   const [loading, setLoading] = useState(false);
-  const [loadingMessage, setLoadingMessage] = useState('Cadastrando sua conta...');
+  const [loadingMessage] = useState('Cadastrando sua conta...');
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
   const isLgUp = useMediaQuery(theme.breakpoints.up('lg'));
   const [activeStep, setActiveStep] = useState(0);
@@ -155,7 +155,7 @@ export default function Register({ setPage, setCodeAuth }) {
             });
             setPage('code');
           } else {
-            setErrorForm(response?.error && typeof response?.error  === 'string' ? response?.error : 'Erro ao registrar, tente novamente ou contate o suporte.');
+            setErrorForm(response?.error && typeof response?.error === 'string' ? response?.error : 'Erro ao registrar, tente novamente ou contate o suporte.');
             console.error('Falha ao enviar mensagem:', response);
           }
           setLoading(false);
@@ -185,12 +185,14 @@ export default function Register({ setPage, setCodeAuth }) {
       </Snackbar>
       <Container maxWidth="lg" sx={{ py: isMdUp ? 0 : 4, height: { xs: 'auto', md: '100%' } }}>
         <Grid container spacing={isLgUp ? 8 : isMdUp ? 6 : 4} sx={{ height: '100%' }}>
+
           {/* Coluna do carrossel */}
           <Grid item size={{ xs: 12, md: 6 }} sx={{
             height: '100%',
             display: 'flex',
             flexDirection: 'column',
-            justifyContent: 'center'
+            justifyContent: 'center',
+            order: { xs: 2, sm: 1 }
           }}>
             <Typography
               variant={isLgUp ? 'h2' : isMdUp ? 'h3' : 'h4'}
@@ -199,6 +201,7 @@ export default function Register({ setPage, setCodeAuth }) {
               zIndex={2}
               mb={4}
               textAlign="center"
+              display={{ xs: 'none', sm: 'block' }}
             >
               Junte-se à outros usuários e pare de sentir <GradientText>saudade</GradientText>
             </Typography>
@@ -208,8 +211,7 @@ export default function Register({ setPage, setCodeAuth }) {
               width: '100%',
               maxWidth: 800,
               mx: 'auto',
-              px: 2,
-              display: { xs: 'none', sm: 'block' }
+              px: 2
             }}>
               <Typography
                 variant="h5"
@@ -314,8 +316,22 @@ export default function Register({ setPage, setCodeAuth }) {
           <Grid item size={{ xs: 12, md: 6 }} sx={{
             height: '100%',
             display: 'flex',
-            alignItems: 'center'
+            alignItems: 'center',
+            flexDirection: { xs: 'column', md: 'row' },
+            order: { xs: 1, sm: 2 }
           }}>
+            <Typography
+              variant={isLgUp ? 'h2' : isMdUp ? 'h3' : 'h4'}
+              lineHeight={1.1}
+              fontWeight={700}
+              zIndex={2}
+              mb={4}
+              textAlign="center"
+              display={{ xs: 'block', sm: 'none' }}
+            >
+              Junte-se à outros usuários e pare de sentir <GradientText>saudade</GradientText>
+            </Typography>
+
             <Paper
               elevation={0}
               sx={{
