@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 const useAudioRecorder = () => {
   const [isRecording, setIsRecording] = useState(false);
@@ -6,6 +6,12 @@ const useAudioRecorder = () => {
   const mediaRecorderRef = useRef(null);
   const timerRef = useRef(null);
   const audioChunksRef = useRef([]); // Armazena os chunks de áudio
+
+  useEffect(() => {
+    return () => {
+      cleanup();
+    };
+  }, []);
 
   const startRecording = async () => {
     try {
@@ -38,6 +44,10 @@ const useAudioRecorder = () => {
         mediaRecorderRef.current.onstop = () => {
           clearInterval(timerRef.current);
           setIsRecording(false);
+
+          // Para todos os tracks da stream
+          mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+
           const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
           resolve(blob);
         };
@@ -49,10 +59,23 @@ const useAudioRecorder = () => {
   };
 
   const cleanup = () => {
-    if (mediaRecorderRef.current?.stream) {
-      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+    // Para a gravação se estiver ativa
+    if (isRecording && mediaRecorderRef.current?.state !== 'inactive') {
+      mediaRecorderRef.current?.stop();
     }
+
+    // Para todos os tracks
+    if (mediaRecorderRef.current?.stream) {
+      mediaRecorderRef.current.stream.getTracks().forEach(track => {
+        track.stop();
+        track.enabled = false;
+      });
+    }
+
     clearInterval(timerRef.current);
+    setIsRecording(false);
+    setRecordingTime(0);
+    audioChunksRef.current = [];
   };
 
   return {

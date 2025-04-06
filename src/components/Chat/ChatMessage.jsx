@@ -182,7 +182,7 @@ export const ChatMessage = ({ message, chat, enableDots = null, avatar, onRetry 
                 color: message?.error ? 'error.main' : 'inherit'
               }}
             >
-              {formatMessageDate(message?.timestamp) || message?.timestamp}
+              {formatMessageDate(message?.time) || message?.time}
             </Typography>
           )}
 

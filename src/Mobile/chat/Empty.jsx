@@ -11,6 +11,10 @@ const EmptyChat = ({ setOpenLoginModal }) => {
   const [messages, setMessages] = useState([]);
   const [messageBuffer, setMessageBuffer] = useState([]);
   const bufferTimeoutRef = useRef(null);
+  const messagesRef = useRef(messages);
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
 
   // Buffer
   useEffect(() => {
@@ -51,7 +55,8 @@ const EmptyChat = ({ setOpenLoginModal }) => {
 
     await socket.emit('message:empty:send', {
       message,
-      pairId
+      pairId,
+      context: messagesRef.current.slice(-8).filter(msg => msg.id !== pairId)
     }, (response) => {
       if (!response.success) {
         setMessages(prevMessages => prevMessages.map(msg =>
@@ -130,32 +135,36 @@ const EmptyChat = ({ setOpenLoginModal }) => {
   };
 
   const onLike = async (message) => {
+    if (message?.liked) return;
     const pairMessage = messages.find(msg => msg.id === message.pairId);
 
-    await socket.emit('message:empty:like', { user: pairMessage?.text, assistant: pairMessage?.text }, (response) => {
-      if (!response.success) {
-        setMessages(prevMessages => prevMessages.map(msg =>
-          msg.id === message?.id ? { ...msg, errorLike: true } : msg
-        ));
-      } else {
-        setMessages(prevMessages => prevMessages.map(msg =>
-          msg.id === message?.id ? { ...msg, liked: true } : msg
-        ));
-      }
-    });
+    await socket.emit('message:empty:like',
+      { user: pairMessage?.text, assistant: message?.text },
+      (response) => {
+        if (!response.success) {
+          setMessages(prevMessages => prevMessages.map(msg =>
+            msg.id === message?.id ? { ...msg, errorLike: true } : msg
+          ));
+        } else {
+          setMessages(prevMessages => prevMessages.map(msg =>
+            msg.id === message?.id ? { ...msg, liked: true } : msg
+          ));
+        }
+      });
   };
 
   const onUnlike = async (message) => {
+    if (message?.unliked) return;
     const pairMessage = messages.find(msg => msg.id === message.pairId);
 
-    await socket.emit('message:empty:unlike', { user: pairMessage?.text, assistant: pairMessage?.text }, (response) => {
+    await socket.emit('message:empty:unlike', { user: pairMessage?.text, assistant: message?.text }, (response) => {
       if (!response.success) {
         setMessages(prevMessages => prevMessages.map(msg =>
           msg.id === message?.id ? { ...msg, errorUnlike: true } : msg
         ));
       } else {
         setMessages(prevMessages => prevMessages.map(msg =>
-          msg.id === message?.id ? { ...msg, Unliked: true, liked: false } : msg
+          msg.id === message?.id ? { ...msg, unliked: true, liked: false } : msg
         ));
       }
     });
@@ -165,7 +174,7 @@ const EmptyChat = ({ setOpenLoginModal }) => {
     <Box sx={{
       display: 'flex',
       flexDirection: 'column',
-      minHeight: '100vh',
+      minHeight: 'calc(100vh - 64px)',
       width: '100%'
     }}>
 
@@ -178,6 +187,8 @@ const EmptyChat = ({ setOpenLoginModal }) => {
             justifyContent: 'center',
             alignItems: 'center',
             width: '100%',
+            position: 'absolute',
+            transform: 'translateY(50%)',
             p: 2
           }}>
             <ContentEmpty />
