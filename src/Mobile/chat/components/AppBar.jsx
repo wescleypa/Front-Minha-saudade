@@ -8,6 +8,7 @@ import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import ProfileMenu from './ProfileMenu';
 import { Avatar, Collapse, IconButton, Stack } from '@mui/material';
 import { useSession } from '../../../contexts/SessionContext';
+import VolunteerActivismIcon from '@mui/icons-material/VolunteerActivism';
 
 function MobileBar({ page, setPage, selected, setSelected }) {
   const { user } = useSession();
@@ -21,17 +22,11 @@ function MobileBar({ page, setPage, selected, setSelected }) {
     setPage('');
   };
 
-  const goPage = (page) => {
-    setSelected(null);
-    setPage(page);
-  };
-
   return (
     <AppBar
       position="fixed"
       sx={{
         bgcolor: 'background.paper',
-        boxShadow: 0,
         boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)'
       }}
     >
@@ -73,65 +68,68 @@ function MobileBar({ page, setPage, selected, setSelected }) {
             }}
           >
             <Typography
-              variant="h5"
+              variant="h6"
               noWrap
               component="a"
               href="#app-bar-with-responsive-menu"
               sx={{
                 fontFamily: 'monospace',
-                fontWeight: 700,
-                letterSpacing: '.3rem',
-                color: 'primary.main',
+                fontWeight: 600,
+                letterSpacing: '-1px',
+                color: 'error.light',
                 textDecoration: 'none',
               }}
             >
-              LOGO
+              <VolunteerActivismIcon />
+              Minha saudade
             </Typography>
           </Collapse>
 
           {/* Botões de Login/Registro (Centralizados quando não logado) */}
-          <Collapse
-            in={!user?.token}
-            sx={{
-              position: 'relative',
-              left: '50%',
-              transform: 'translateX(-50%)'
-            }}
-          >
-            <div style={{ display: 'flex' }}>
-              <Button
-                variant="outlined"
-                size='small'
-                color="primary"
-                sx={{
-                  borderRadius: '20px',
-                  textTransform: 'none',
-                  px: 3,
-                  mr: 1
-                }}
-                onClick={() => setPage('login')}
-              >
-                Login
-              </Button>
-              <Button
-                variant="contained"
-                size='small'
-                color="primary"
-                sx={{
-                  borderRadius: '20px',
-                  textTransform: 'none',
-                  px: 3,
-                  backgroundColor: 'primary.dark',
-                  '&:hover': {
-                    backgroundColor: '#38A169',
-                  }
-                }}
-                onClick={() => setPage('register')}
-              >
-                Registrar
-              </Button>
-            </div>
-          </Collapse>
+          {!user?.token && (
+            <Collapse
+              in={!user?.token}
+              sx={{
+                position: 'relative',
+                left: '50%',
+                transform: 'translateX(-50%)'
+              }}
+            >
+              <div style={{ display: 'flex' }}>
+                <Button
+                  variant="outlined"
+                  size='small'
+                  color="primary"
+                  sx={{
+                    borderRadius: '20px',
+                    textTransform: 'none',
+                    px: 3,
+                    mr: 1
+                  }}
+                  onClick={() => setPage('login')}
+                >
+                  Login
+                </Button>
+                <Button
+                  variant="contained"
+                  size='small'
+                  color="primary"
+                  sx={{
+                    borderRadius: '20px',
+                    textTransform: 'none',
+                    px: 3,
+                    backgroundColor: 'primary.dark',
+                    '&:hover': {
+                      backgroundColor: '#38A169',
+                    }
+                  }}
+                  onClick={() => setPage('register')}
+                >
+                  Registrar
+                </Button>
+              </div>
+            </Collapse>
+          )}
 
           {/* Avatar (Canto Direito Fixo) */}
           <Collapse

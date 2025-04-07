@@ -9,7 +9,7 @@ import SubmitButton from './SubmitButton';
 const ChatInput = ({ onSend }) => {
   const [value, setValue] = useState('');
   const [audioBlob, setAudioBlob] = useState(null);
-  const inputRef = useRef(null); 
+  const inputRef = useRef(null);
   const { isRecording, recordingTime, startRecording, stopRecording } = useAudioRecorder();
 
 
@@ -43,51 +43,49 @@ const ChatInput = ({ onSend }) => {
   };
 
   return (
-    <Box sx={{ position: 'fixed', bottom: 0, left: 0, right: 0 }}>
-      <BottomNavigation>
-        <Box component="form" onSubmit={handleSubmit} sx={{
-          p: '2px 4px',
-          display: 'flex',
-          alignItems: 'center',
-          width: '100%',
-          bgcolor: 'background.paper',
-          boxShadow: 3
-        }}>
-          <EmojiPicker onSend={(emoji) => {
-            setValue(v => v + emoji);
-            inputRef.current?.focus();
-          }}
+    <BottomNavigation sx={{ position: 'fixed', bottom: 0, left: 0, right: 0 }}>
+      <Box component="form" onSubmit={handleSubmit} sx={{
+        p: '2px 4px',
+        display: 'flex',
+        alignItems: 'center',
+        width: '100%',
+        bgcolor: 'background.paper',
+        boxShadow: 3
+      }}>
+        <EmojiPicker onSend={(emoji) => {
+          setValue(v => v + emoji);
+          inputRef.current?.focus();
+        }}
+        />
+        {isRecording ? (
+          <RecordingProgress time={recordingTime} />
+        ) : audioBlob ? (
+          <AudioPlayer
+            audioBlob={audioBlob}
+            recordingTime={recordingTime}
+            onCancel={() => setAudioBlob(null)}
           />
-          {isRecording ? (
-            <RecordingProgress time={recordingTime} />
-          ) : audioBlob ? (
-            <AudioPlayer
-              audioBlob={audioBlob}
-              recordingTime={recordingTime}
-              onCancel={() => setAudioBlob(null)}
-            />
-          ) : (
-            <InputBase
-              inputRef={inputRef}
-              sx={{ ml: 1, flex: 1 }}
-              placeholder="Digite uma mensagem..."
-              value={value}
-              onChange={handleChange}
-              fullWidth
-            />
-          )}
-
-          <Divider sx={{ height: 28, m: 1 }} orientation="vertical" />
-
-          <SubmitButton
-            isRecording={isRecording}
-            hasAudio={!!audioBlob}
-            hasText={!!value.trim()}
-            onStartRecording={startRecording}
+        ) : (
+          <InputBase
+            inputRef={inputRef}
+            sx={{ ml: 1, flex: 1 }}
+            placeholder="Digite uma mensagem..."
+            value={value}
+            onChange={handleChange}
+            fullWidth
           />
-        </Box>
-      </BottomNavigation>
-    </Box>
+        )}
+
+        <Divider sx={{ height: 28, m: 1 }} orientation="vertical" />
+
+        <SubmitButton
+          isRecording={isRecording}
+          hasAudio={!!audioBlob}
+          hasText={!!value.trim()}
+          onStartRecording={startRecording}
+        />
+      </Box>
+    </BottomNavigation>
   );
 };
 

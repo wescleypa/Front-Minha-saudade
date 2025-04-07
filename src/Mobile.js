@@ -1,19 +1,23 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSession } from './contexts/SessionContext';
 import EmptyChat from './Mobile/chat/Empty';
 import { LoginModal } from './components/Auth/loginModal';
 import MobileBar from './Mobile/chat/components/AppBar';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
-import { Box, Collapse } from '@mui/material';
+import { Alert, Box, Collapse, Snackbar } from '@mui/material';
 import ChatUser from './Mobile/chat/User';
 import ChatMessage from './Mobile/chat/components/ChatMessage';
 import ChatInput from './Mobile/chat/components/Input';
 import UserProfile from './Mobile/chat/components/UserProfile';
 import SettingsPage from './Mobile/chat/components/Settings';
+import HelpPage from './Mobile/chat/components/Help';
+import ChatProfile from './Mobile/chat/components/ChatProfile';
+import ChatSettingsPage from './Mobile/chat/components/ChatSettings';
+import VerifyPhone from './Mobile/chat/components/VerifyPhone';
 
 const Mobile = () => {
-  const { user, loadingUser } = useSession();
+  const { user, loadingUser, error, setError } = useSession();
   const [selected, setSelected] = useState(null);
   const [page, setPage] = useState('');
   const [openLoginModal, setOpenLoginModal] = useState(false);
@@ -29,6 +33,8 @@ const Mobile = () => {
       });
     }
   }, [loadingUser, user?.id]);
+
+  const handleCloseError = () => setError(null);
 
   return (
     <Box component="div" className="App" sx={{ minHeight: '100vh', bgcolor: 'background.paper' }}>
@@ -52,32 +58,73 @@ const Mobile = () => {
         <EmptyChat setOpenLoginModal={setOpenLoginModal} />
       )}
 
-      <Collapse in={!!user?.token && selected === null && (page === '' || !page)} sx={{ mt: '64px' }}>
-        <ChatUser setSelected={setSelected} />
-      </Collapse>
+      {!!user?.token && selected === null && (page === '' || !page) && (
+        <Collapse in={!!user?.token && selected === null && (page === '' || !page)} sx={{ mt: '64px' }}>
+          <ChatUser setSelected={setSelected} />
+        </Collapse>
+      )}
 
-      <Collapse in={selected !== null}>
-        <ChatMessage
-          chat={user?.chats?.find(c => c?.id === selected)}
-          onRetry={(e) => alert(e)}
-          onLike={(e) => alert(e)}
-          onUnlike={(e) => alert(e)}
-        />
+      {selected !== null && (!page || page === '') && (
+        <Collapse in={selected !== null && (!page || page === '')}>
+          <ChatMessage
+            chat={user?.chats?.find(c => c?.id === selected)}
+            onRetry={(e) => alert(e)}
+            onLike={(e) => alert(e)}
+            onUnlike={(e) => alert(e)}
+          />
 
-        {/* ChatInput fixo na parte inferior */}
-        <Box sx={{ width: '100%' }}>
-          <ChatInput onSend={(e) => alert(e)} />
-        </Box>
-      </Collapse>
+          {/* ChatInput fixo na parte inferior */}
+          <Box sx={{ width: '100%' }}>
+            <ChatInput onSend={(e) => alert(e)} />
+          </Box>
+        </Collapse>
+      )}
 
-      <Collapse in={page === 'profile' && selected === null && !!user?.token}>
-        <UserProfile />
-      </Collapse>
+      {page === 'profile' && selected === null && !!user?.token && (
+        <Collapse in={page === 'profile' && selected === null && !!user?.token}>
+          <UserProfile setPage={setPage} />
+        </Collapse>
+      )}
 
-      <Collapse in={page === 'settings' && selected === null && !!user?.token}>
-        <SettingsPage />
-      </Collapse>
+      {page === 'settings' && selected === null && !!user?.token && (
+        <Collapse in={page === 'settings' && selected === null && !!user?.token}>
+          <SettingsPage setPage={setPage} />
+        </Collapse>
+      )}
 
+      {page === 'help' && selected === null && !!user?.token && (
+        <Collapse in={page === 'help' && selected === null && !!user?.token}>
+          <HelpPage />
+        </Collapse>
+      )}
+
+      {page === 'profile-chat' && selected !== null && !!user?.token && (
+        <Collapse in={page === 'profile-chat' && selected !== null && !!user?.token}>
+          <ChatProfile selected={selected} />
+        </Collapse>
+      )}
+
+      {page === 'settings-chat' && selected !== null && !!user?.token && (
+        <Collapse in={page === 'settings-chat' && selected !== null && !!user?.token}>
+          <ChatSettingsPage selected={selected} />
+        </Collapse>
+      )}
+
+      {page === 'verify_phone' && selected === null && !!user?.token && (
+        <Collapse in={page === 'verify_phone' && selected === null && !!user?.token}>
+          <VerifyPhone setPage={setPage} />
+        </Collapse>
+      )}
+      questTwoFactor
+
+      <Snackbar
+        anchorOrigin={{ vertical: 'center', horizontal: 'bottom' }}
+        open={!!error}
+        onClose={handleCloseError}
+        autoHideDuration={5000}
+      >
+        <Alert severity="error">{error}</Alert>
+      </ Snackbar>
     </Box>
   );
 };

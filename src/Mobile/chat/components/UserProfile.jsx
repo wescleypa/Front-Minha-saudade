@@ -3,22 +3,19 @@ import {
   Box,
   Avatar,
   Typography,
-  Button,
   Card,
   CardContent,
   Stack,
   Divider,
-  Chip,
   IconButton,
   Grid,
   styled
 } from '@mui/material';
 import { useSession } from '../../../contexts/SessionContext';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import ChatBubbleIcon from '@mui/icons-material/ChatBubble';
 import SettingsApplicationsIcon from '@mui/icons-material/SettingsApplications';
 import ChatIcon from '@mui/icons-material/Chat';
 import LabelIcon from '@mui/icons-material/Label';
+import { bestMiss } from '../../../components/Utils/geral';
 
 const ThoughtBubble = styled(Box)(({ theme }) => ({
   position: 'relative',
@@ -45,11 +42,12 @@ const ThoughtBubble = styled(Box)(({ theme }) => ({
   }
 }));
 
-export default function MobileProfilePage() {
+export default function MobileProfilePage({ setPage }) {
   const { user } = useSession();
 
-  // Dados de exemplo (substitua pelos reais)
-  const memoryOfTheDay = "Lembra quando seu avô guardou feijão nos bolsos?";
+  const maiorSaudade = bestMiss(user?.chats);
+  const lastMessage = maiorSaudade.messages.length > 0 ? maiorSaudade.messages.at(-1) : null;
+
   const mostMissedContact = {
     name: "Vovó Maria",
     avatar: "",
@@ -64,10 +62,10 @@ export default function MobileProfilePage() {
   };
 
   return (
-    <Box sx={{ minHeight: 'calc(100vh - 64px)' }}>
+    <Box sx={{ minHeight: 'calc(100vh - 64px)', pt: 7 }}>
 
       {/* Seção do perfil */}
-      <Card sx={{ mx: 2, mt: 1, boxShadow: 0 }}>
+      <Card sx={{ mx: 2, boxShadow: 0 }}>
         <CardContent sx={{ pt: 4 }}>
           <Stack
             sx={{
@@ -99,7 +97,7 @@ export default function MobileProfilePage() {
               </Typography>
             </Box>
 
-            <IconButton sx={{ ml: 'auto' }}>
+            <IconButton sx={{ ml: 'auto' }} onClick={() => setPage('settings')}>
               <SettingsApplicationsIcon color="grey" />
             </IconButton>
 
@@ -129,10 +127,11 @@ export default function MobileProfilePage() {
                 container
                 spacing={2}
                 sx={{
-                  display: 'inline-flex',
+                  display: 'flex',
                   flexWrap: 'nowrap',
                   width: 'auto',
-                  textAlign: 'center'
+                  textAlign: 'center',
+                  justifyContent: 'center'
                 }}
               >
                 <Grid item>
@@ -166,7 +165,7 @@ export default function MobileProfilePage() {
                     32
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    Lembranças
+                    Memórias
                   </Typography>
                 </Grid>
 
@@ -223,14 +222,14 @@ export default function MobileProfilePage() {
           <CardContent>
             <Stack direction="row" spacing={2} alignItems="center">
               <Avatar src={mostMissedContact.avatar}>
-                {mostMissedContact.name.charAt(0)}
+                {maiorSaudade?.name?.charAt(0)}
               </Avatar>
               <Box sx={{ flexGrow: 1 }}>
                 <Typography>
-                  {mostMissedContact.name}
+                  {maiorSaudade?.name}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" noWrap>
-                  {mostMissedContact.lastMessage}
+                  {lastMessage?.text}
                 </Typography>
               </Box>
               <IconButton size="medium">
@@ -318,22 +317,6 @@ export default function MobileProfilePage() {
             </Box>
           </ThoughtBubble>
         </Box>
-      </Box>
-
-      <Box sx={{
-        display: 'flex',
-        justifyContent: 'center',
-        px: 2,
-        mt: 10,
-        mb: 1
-      }}>
-        <Button
-          variant='contained'
-          color='error'
-          sx={{ maxWidth: '400px', boxShadow: 3 }}
-        >
-          Deletar minha conta
-        </Button>
       </Box>
     </Box>
   );

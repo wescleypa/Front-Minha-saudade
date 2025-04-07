@@ -20,7 +20,8 @@ const theme = createTheme({
     },
     text: {
       primary: '#1A202C', // Preto
-      secondary: '#4A5568' // Cinza escuro
+      secondary: '#4A5568', // Cinza escuro
+      light: '#FFFFFF'
     },
     error: {
       main: '#E53E3E' // Vermelho
@@ -32,15 +33,15 @@ const theme = createTheme({
   typography: {
     fontFamily: '"Inter", "Helvetica", "Arial", sans-serif',
     h1: {
-     // fontSize: '2.5rem',
+      // fontSize: '2.5rem',
       fontWeight: 700
     },
     h2: {
-     // fontSize: '2rem',
+      // fontSize: '2rem',
       fontWeight: 600
     },
     body1: {
-     // fontSize: '1rem',
+      // fontSize: '1rem',
       lineHeight: 1.5
     }
   },

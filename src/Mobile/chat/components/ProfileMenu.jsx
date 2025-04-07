@@ -86,7 +86,7 @@ export default function ProfileMenu({ anchorEl, setAnchorEl, selected, setSelect
       transformOrigin={{ horizontal: 'right', vertical: 'top' }}
       anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
     >
-      <MenuItem onClick={() => goPage('profile')} sx={{ minWidth: 250 }}>
+      <MenuItem onClick={() => goPage(selected !== null ? 'profile-chat' : 'profile')} sx={{ minWidth: 250 }}>
         <Avatar
           alt={selected !== null ? chat?.name : user?.name}
           src={selected !== null ? chat?.name : user?.avatar}
@@ -106,7 +106,7 @@ export default function ProfileMenu({ anchorEl, setAnchorEl, selected, setSelect
         </Typography>
       </MenuItem>
       <Divider />
-      <MenuItem onClick={() => goPage('settings')}>
+      <MenuItem onClick={() => goPage(selected === null ? 'settings' : 'settings-chat')}>
         <ListItemIcon>
           <Settings fontSize="small" />
         </ListItemIcon>
@@ -122,30 +122,31 @@ export default function ProfileMenu({ anchorEl, setAnchorEl, selected, setSelect
         </MenuItem>
       )}
 
-      {selected !== null && (
-        <MenuItem onClick={handleClose}>
-          <ListItemIcon>
-            <DeleteIcon fontSize="small" />
-          </ListItemIcon>
-          Apagar conversa
-        </MenuItem>
-      )}
-
-      {selected === null && (
-        <MenuItem onClick={handleLogout}>
-          <ListItemIcon>
-            <Logout fontSize="small" />
-          </ListItemIcon>
-          Desconectar
-        </MenuItem>
-      )}
-
       <MenuItem onClick={handleHelp}>
         <ListItemIcon>
           <HelpIcon fontSize="small" />
         </ListItemIcon>
         Ajuda
       </MenuItem>
+
+      {selected !== null && (
+        <MenuItem onClick={handleClose} sx={{ color: 'error.main' }}>
+          <ListItemIcon>
+            <DeleteIcon fontSize="small" sx={{ color: 'error.main' }} />
+          </ListItemIcon>
+          Apagar conversa
+        </MenuItem>
+      )}
+
+      {selected === null && (
+        <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
+          <ListItemIcon>
+            <Logout fontSize="small" sx={{ color: 'error.main' }} />
+          </ListItemIcon>
+          Desconectar
+        </MenuItem>
+      )}
+
     </Menu>
 
     <Popover

@@ -24,8 +24,12 @@ export const SessionProvider = ({ children }) => {
 
   useEffect(() => {
     if (user?.id) {
-      localStorage.setItem('token', user?.token);
-      localStorage.setItem('user', user?.id);
+      if (localStorage.getItem('token') !== user?.token) {
+        localStorage.setItem('token', user?.token);
+      }
+      if (localStorage.getItem('user') !== user?.id) {
+        localStorage.setItem('user', user?.id);
+      }
       console.log('userdefinido ', user);
     }
   }, [user])
@@ -56,6 +60,7 @@ export const SessionProvider = ({ children }) => {
             throw new Error(response.error || 'Sessão inválida');
           }
         } catch (err) {
+          console.error(err);
           setError(err.message);
           setUser(null);
           localStorage.clear();
@@ -83,8 +88,40 @@ export const SessionProvider = ({ children }) => {
     });
   };
 
+  const update = async (column, value) => {
+    if (socket) {
+      const backup = user[column];
+
+      setUser((prev) => ({ ...prev, [column]: value }));
+      await socket.emit('user:update:profile', { column, value }, (response) => {
+        if (!response?.success) {
+          setUser((prev) => ({ ...prev, [column]: backup }));
+          setError(response?.error ?? 'Houve uma falha ao tentar se conectar com servidor, tente novamente.');
+        }
+      });
+    } else {
+      setError('Houve uma falha ao tentar se conectar com servidor, tente novamente.');
+    }
+  };
+
+  const updateConfig = async (column, value) => {
+    if (socket) {
+      const backup = user[column];
+
+      setUser((prev) => ({ ...prev, [column]: value }));
+      await socket.emit('user:update:config', { column, value }, (response) => {
+        if (!response?.success) {
+          setUser((prev) => ({ ...prev, [column]: backup }));
+          setError(response?.error ?? 'Houve uma falha ao tentar se conectar com servidor, tente novamente.');
+        }
+      });
+    } else {
+      setError('Houve uma falha ao tentar se conectar com servidor, tente novamente.');
+    }
+  };
+
   return (
-    <SessionContext.Provider value={{ user, setUser, error, setError, logout, loadingUser }}>
+    <SessionContext.Provider value={{ user, setUser, error, setError, logout, loadingUser, update, updateConfig }}>
       {children}
     </SessionContext.Provider>
   );
