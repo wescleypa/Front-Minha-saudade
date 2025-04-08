@@ -10,7 +10,10 @@ import {
   Divider,
   Popover,
   TextField,
-  Button
+  Button,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails
 } from '@mui/material';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import EmailIcon from '@mui/icons-material/Email';
@@ -20,6 +23,7 @@ import PaletteIcon from '@mui/icons-material/Palette';
 import AllInclusiveIcon from '@mui/icons-material/AllInclusive';
 import { useSession } from '../../../contexts/SessionContext';
 import { useSocket } from '../../../contexts/SocketContext';
+import { ExpandMore } from '@mui/icons-material';
 
 export default function SettingsPage({ setPage }) {
   const { socket } = useSocket();
@@ -45,9 +49,9 @@ export default function SettingsPage({ setPage }) {
   };
 
   const handleToggreTwoFactor = () => {
-    if (!user?.phone || !user?.phone_verified) {
+    /*if (!user?.phone || !user?.phone_verified) {
       return setPage('verify_phone');
-    }
+    }*/
   };
 
   const handleShowAccountDelete = (e) => setShowAccountDelete(e?.currentTarget);
@@ -134,20 +138,43 @@ export default function SettingsPage({ setPage }) {
         </ListItem>
         <Divider component="li" />
 
-        <ListItem>
-          <ListItemIcon>
-            <LockIcon color="primary" />
-          </ListItemIcon>
-          <ListItemText
-            primary="Autenticação em 2 fatores"
-            secondary="Maior segurança na conta"
-          />
-          <Switch
-            checked={!!user?.two_factor_enabled}
-            onChange={handleToggreTwoFactor}
-            color="primary"
-          />
+        <ListItem sx={{ p: 0 }}>
+          <Accordion>
+            <AccordionSummary
+              expandIcon={<ExpandMore />}
+              aria-controls="panel1-content"
+              id="panel1-header"
+            >
+              <ListItemIcon sx={{ mt: 2 }}>
+                <LockIcon color="primary" />
+              </ListItemIcon>
+              <ListItemText
+                primary="Autenticação em 2 fatores"
+                secondary="Maior segurança na conta"
+              />
+            </AccordionSummary>
+            <AccordionDetails sx={{ width: '100vw', display: 'flex', flexDirection: 'column' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <Switch
+                  checked={!!user?.two_factor_enabled && user?.two_factor_type === 0}
+                  onChange={handleToggreTwoFactor(0)}
+                  color="primary"
+                />
+                <Typography variant="body2">Autenticação em 2 fatores por E-mail</Typography>
+              </Box>
+
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <Switch
+                  checked={!!user?.two_factor_enabled && user?.two_factor_type === 1}
+                  onChange={handleToggreTwoFactor(1)}
+                  color="primary"
+                />
+                <Typography variant="body2">Autenticação em 2 fatores por WhatsApp</Typography>
+              </Box>
+            </AccordionDetails>
+          </Accordion>
         </ListItem>
+
         <Divider component="li" />
 
         {/* Dados */}
